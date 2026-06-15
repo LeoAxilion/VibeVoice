@@ -47,8 +47,21 @@ def parse_lrc(lrc_path: str) -> List[Dict]:
     """
     segments = []
     
-    with open(lrc_path, 'r', encoding='utf-8') as f:
-        content = f.read()
+    # Try multiple encodings: UTF-8, GBK, GB2312, GB18030
+    content = None
+    encodings = ['utf-8', 'gbk', 'gb2312', 'gb18030', 'latin-1']
+    
+    for encoding in encodings:
+        try:
+            with open(lrc_path, 'r', encoding=encoding) as f:
+                content = f.read()
+            break
+        except (UnicodeDecodeError, UnicodeError):
+            continue
+    
+    if content is None:
+        print(f"  Warning: Could not decode {lrc_path} with any supported encoding")
+        return segments
     
     # Remove metadata tags like [ti:Title], [ar:Artist], etc.
     content = re.sub(r'\[(ti|ar|al|by|offset|length):[^\]]*\]', '', content)
