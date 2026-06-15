@@ -386,6 +386,7 @@ def setup_model_for_training(
     device: str = "cuda",
     dtype: torch.dtype = torch.bfloat16,
     gradient_checkpointing: bool = True,
+    load_in_8bit: bool = True,
 ) -> Tuple[nn.Module, VibeVoiceASRProcessor]:
     """
     Load and prepare model for LoRA training.
@@ -413,7 +414,7 @@ def setup_model_for_training(
         "trust_remote_code": True,
     }
     
-    if model_args.load_in_8bit:
+    if load_in_8bit:
         logger.info("Loading model in 8-bit quantization")
         model_kwargs["load_in_8bit"] = True
         model_kwargs["device_map"] = "auto"
@@ -426,7 +427,7 @@ def setup_model_for_training(
         **model_kwargs,
     )
     
-    if not model_args.load_in_8bit and device != "auto":
+    if not load_in_8bit and device != "auto":
         model = model.to(device)
     
     # Freeze speech tokenizers (we only want to fine-tune the language model)
@@ -489,6 +490,7 @@ def train(
         device=device,
         dtype=dtype,
         gradient_checkpointing=gradient_checkpointing,
+        load_in_8bit=model_args.load_in_8bit,
     )
     
     # Create dataset
