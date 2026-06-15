@@ -222,11 +222,9 @@ def main():
     
     if result['segments']:
         print(f"\n--- Structured Output ({len(result['segments'])} segments) ---")
-        for seg in result['segments'][:20]:
+        for seg in result['segments']:
             print(f"[{seg.get('start_time', 'N/A')} - {seg.get('end_time', 'N/A')}] "
-                  f"Speaker {seg.get('speaker_id', 'N/A')}: {seg.get('text', '')[:80]}...")
-        if len(result['segments']) > 20:
-            print(f"  ... and {len(result['segments']) - 20} more segments")
+                  f"Speaker {seg.get('speaker_id', 'N/A')}: {seg.get('text', '')}")
 
 
 if __name__ == "__main__":
