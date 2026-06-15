@@ -197,39 +197,13 @@ def convert_mgg_to_ogg(mgg_path: str, ogg_path: str) -> bool:
 def find_audio_file(lrc_path: Path, directory: Path) -> Optional[Path]:
     """
     Find audio file matching the LRC file.
-    QQ Music files often have suffixes like _L for lyrics.
+    QQ Music files have exact same name with different extension.
     """
-    lrc_stem = lrc_path.stem
-    
-    # Try exact match first (without .lrc extension)
+    # Try exact match first (replace .lrc with audio extension)
     for ext in ['.ogg', '.mgg', '.mp3', '.flac', '.wav']:
         audio_path = lrc_path.with_suffix(ext)
         if audio_path.exists():
             return audio_path
-    
-    # Try removing common QQ Music suffixes like _L, _LRC, etc.
-    base_name = lrc_stem
-    for suffix in ['_L', '_lrc', '_LRC', '_lyrics', '_Lyrics']:
-        if base_name.endswith(suffix):
-            clean_name = base_name[:-len(suffix)]
-            for ext in ['.ogg', '.mgg', '.mp3', '.flac', '.wav']:
-                audio_path = directory / f"{clean_name}{ext}"
-                if audio_path.exists():
-                    return audio_path
-    
-    # Try glob pattern: same prefix with any audio extension
-    for ext in ['*.ogg', '*.mgg', '*.mp3', '*.flac', '*.wav']:
-        pattern = f"{lrc_stem}*{ext}"
-        matches = list(directory.glob(pattern))
-        if matches:
-            return matches[0]
-        # Also try without _L suffix
-        if lrc_stem.endswith('_L'):
-            clean_name = lrc_stem[:-2]
-            pattern = f"{clean_name}*{ext}"
-            matches = list(directory.glob(pattern))
-            if matches:
-                return matches[0]
     
     return None
 
