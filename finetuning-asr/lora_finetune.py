@@ -477,7 +477,6 @@ def train(
         device=device,
         dtype=dtype,
         gradient_checkpointing=gradient_checkpointing,
-        load_in_8bit=model_args.load_in_8bit,
     )
     
     # Create dataset
