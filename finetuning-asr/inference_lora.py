@@ -51,7 +51,6 @@ def load_lora_model(
         base_model_path,
         dtype=dtype,
         device_map=device if device == "auto" else None,
-        attn_implementation="flash_attention_2",
         trust_remote_code=True,
     )
     
