@@ -48,6 +48,10 @@ class ModelArguments:
         default="microsoft/VibeVoice-ASR",
         metadata={"help": "Path to pretrained model (HuggingFace model ID or local path)"}
     )
+    load_in_8bit: bool = field(
+        default=True,
+        metadata={"help": "Load model in 8-bit quantization to save memory"}
+    )
 
 
 @dataclass
@@ -405,14 +409,24 @@ def setup_model_for_training(
     )
     
     # Load model
+    model_kwargs = {
+        "trust_remote_code": True,
+    }
+    
+    if model_args.load_in_8bit:
+        logger.info("Loading model in 8-bit quantization")
+        model_kwargs["load_in_8bit"] = True
+        model_kwargs["device_map"] = "auto"
+    else:
+        model_kwargs["dtype"] = dtype
+        model_kwargs["device_map"] = device if device == "auto" else None
+    
     model = VibeVoiceASRForConditionalGeneration.from_pretrained(
         model_path,
-        dtype=dtype,
-        device_map=device if device == "auto" else None,
-        trust_remote_code=True,
+        **model_kwargs,
     )
     
-    if device != "auto":
+    if not model_args.load_in_8bit and device != "auto":
         model = model.to(device)
     
     # Freeze speech tokenizers (we only want to fine-tune the language model)
