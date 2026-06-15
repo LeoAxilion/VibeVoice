@@ -400,8 +400,8 @@ def main():
     parser.add_argument(
         "--model_path", 
         type=str, 
-        default="",
-        help="Path to the model checkpoint"
+        default="microsoft/VibeVoice-ASR",
+        help="Path to the pretrained model (HuggingFace model ID or local path)"
     )
     parser.add_argument(
         "--audio_files", 
