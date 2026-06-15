@@ -157,7 +157,7 @@ def get_audio_duration(audio_path: str) -> Optional[float]:
         if result.returncode == 0:
             return float(result.stdout.strip())
     except Exception as e:
-        print(f"  Warning: Could not get duration for {audio_path}: {e}")
+        pass
     
     return None
 
@@ -185,13 +185,44 @@ def convert_mgg_to_ogg(mgg_path: str, ogg_path: str) -> bool:
         if result.returncode == 0 and os.path.exists(ogg_path):
             return True
         
-        print(f"  Warning: ffmpeg could not convert {mgg_path}")
-        print(f"  Error: {result.stderr[:200]}")
         return False
         
     except Exception as e:
-        print(f"  Error converting {mgg_path}: {e}")
         return False
+
+
+def try_get_duration_with_conversion(audio_path: str) -> Tuple[Optional[float], Optional[str]]:
+    """
+    Try to get audio duration, converting MGG to OGG if needed.
+    
+    Returns:
+        Tuple of (duration_in_seconds, converted_audio_path)
+        If conversion was needed, converted_audio_path will be the new OGG path.
+    """
+    audio_path = Path(audio_path)
+    
+    # First try direct duration
+    duration = get_audio_duration(str(audio_path))
+    if duration is not None:
+        return duration, None
+    
+    # If failed and it's MGG, try converting
+    if audio_path.suffix.lower() == '.mgg':
+        ogg_path = str(audio_path.with_suffix('.ogg'))
+        
+        # Check if OGG already exists from previous conversion
+        if os.path.exists(ogg_path):
+            duration = get_audio_duration(ogg_path)
+            if duration is not None:
+                return duration, ogg_path
+        
+        # Try converting
+        if convert_mgg_to_ogg(str(audio_path), ogg_path):
+            duration = get_audio_duration(ogg_path)
+            if duration is not None:
+                return duration, ogg_path
+    
+    return None, None
 
 
 def find_audio_file(lrc_path: Path, directory: Path) -> Optional[Path]:
@@ -240,16 +271,18 @@ def process_single_song(
     """
     base_name = lrc_path.stem
     
-    # Get audio duration
-    audio_duration = get_audio_duration(str(audio_path))
+    # Get audio duration, converting MGG if needed
+    audio_duration, converted_audio = try_get_duration_with_conversion(str(audio_path))
     if audio_duration is None:
-        print(f"  Skipping {base_name}: Could not determine audio duration")
         return None
+    
+    # If MGG was converted, use the converted OGG
+    if converted_audio:
+        audio_path = Path(converted_audio)
     
     # Parse LRC
     segments = parse_lrc(str(lrc_path))
     if not segments:
-        print(f"  Skipping {base_name}: No lyrics found in LRC file")
         return None
     
     # Estimate end times
@@ -263,7 +296,6 @@ def process_single_song(
     if audio_path.suffix.lower() == '.mgg':
         ogg_path = output_dir / f"{song_index:04d}_{base_name}.ogg"
         if not convert_mgg_to_ogg(str(audio_path), str(ogg_path)):
-            print(f"  Skipping {base_name}: MGG conversion failed")
             return None
         output_audio_name = f"{song_index:04d}_{base_name}.ogg"
     else:
