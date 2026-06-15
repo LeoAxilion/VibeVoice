@@ -277,7 +277,13 @@ def convert_ami_to_vibevoice(
             output_json = output_dir / f'{base_name}.json'
             with open(output_json, 'w', encoding='utf-8') as f:
                 json.dump(vibevoice_data, f, ensure_ascii=False, indent=2)
-            
+
+            # Save pure text (no speaker, no timestamps)
+            output_puretxt = output_dir / f'{base_name}.puretxt.txt'
+            with open(output_puretxt, 'w', encoding='utf-8') as f:
+                text_lines = [seg['text'] for seg in formatted_segments]
+                f.write('\n'.join(text_lines))
+
             processed_count += 1
             
         except Exception as e:
