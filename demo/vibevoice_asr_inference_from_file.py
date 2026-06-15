@@ -478,7 +478,13 @@ def main():
         choices=["flash_attention_2", "sdpa", "eager", "auto"],
         help="Attention implementation to use. 'auto' will select the best available for your device (flash_attention_2 for CUDA, sdpa for MPS/CPU/XPU)"
     )
-    
+    parser.add_argument(
+        "--pure_text_output",
+        type=str,
+        default=None,
+        help="Optional path to write a single-line plain text file containing all transcriptions joined by space (no speaker info, no timestamps). If omitted, no .txt file is written."
+    )
+
     args = parser.parse_args()
     
     # Auto-detect best attention implementation based on device
@@ -575,6 +581,27 @@ def main():
     for result in all_results:
         print("\n" + "-"*60)
         print_result(result)
+
+    # Write optional pure text output
+    if args.pure_text_output:
+        all_text = []
+        for result in all_results:
+            segments = result.get("segments", [])
+            if segments:
+                for seg in segments:
+                    text = seg.get("text", "")
+                    if text:
+                        all_text.append(text)
+            else:
+                raw = result.get("raw_text", "")
+                if raw:
+                    all_text.append(raw)
+
+        output_path = Path(args.pure_text_output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(" ".join(all_text))
+        print(f"\nPure text written to: {output_path}")
 
 
 if __name__ == "__main__":
