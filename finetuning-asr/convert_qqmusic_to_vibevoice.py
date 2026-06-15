@@ -194,17 +194,45 @@ def convert_mgg_to_ogg(mgg_path: str, ogg_path: str) -> bool:
         return False
 
 
-def find_audio_file(base_name: str, directory: Path) -> Optional[Path]:
+def find_audio_file(lrc_path: Path, directory: Path) -> Optional[Path]:
     """
-    Find audio file (OGG or MGG) matching the base name.
+    Find audio file matching the LRC file.
+    QQ Music files often have suffixes like _L for lyrics.
     """
-    # Try different extensions
+    lrc_stem = lrc_path.stem
+    
+    # Try exact match first (without .lrc extension)
     for ext in ['.ogg', '.mgg', '.mp3', '.flac', '.wav']:
-        audio_path = directory / f"{base_name}{ext}"
+        audio_path = lrc_path.with_suffix(ext)
         if audio_path.exists():
             return audio_path
     
+    # Try removing common QQ Music suffixes like _L, _LRC, etc.
+    base_name = lrc_stem
+    for suffix in ['_L', '_lrc', '_LRC', '_lyrics', '_Lyrics']:
+        if base_name.endswith(suffix):
+            clean_name = base_name[:-len(suffix)]
+            for ext in ['.ogg', '.mgg', '.mp3', '.flac', '.wav']:
+                audio_path = directory / f"{clean_name}{ext}"
+                if audio_path.exists():
+                    return audio_path
+    
+    # Try glob pattern: same prefix with any audio extension
+    for ext in ['*.ogg', '*.mgg', '*.mp3', '*.flac', '*.wav']:
+        pattern = f"{lrc_stem}*{ext}"
+        matches = list(directory.glob(pattern))
+        if matches:
+            return matches[0]
+        # Also try without _L suffix
+        if lrc_stem.endswith('_L'):
+            clean_name = lrc_stem[:-2]
+            pattern = f"{clean_name}*{ext}"
+            matches = list(directory.glob(pattern))
+            if matches:
+                return matches[0]
+    
     return None
+
 
 
 def find_lrc_file(base_name: str, directory: Path) -> Optional[Path]:
@@ -342,7 +370,7 @@ def convert_qqmusic_to_vibevoice(
             base_name = lrc_path.stem
             
             # Find corresponding audio file
-            audio_path = find_audio_file(base_name, lrc_path.parent)
+            audio_path = find_audio_file(lrc_path, lrc_path.parent)
             if audio_path is None:
                 print(f"\nWarning: No audio file found for {base_name}")
                 skipped_songs.append(str(lrc_path))
