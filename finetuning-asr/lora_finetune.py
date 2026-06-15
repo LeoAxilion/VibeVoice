@@ -21,6 +21,7 @@ from transformers import (
     TrainingArguments,
     Trainer,
     HfArgumentParser,
+    BitsAndBytesConfig,
 )
 from peft import (
     LoraConfig,
