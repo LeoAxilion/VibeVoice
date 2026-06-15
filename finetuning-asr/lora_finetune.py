@@ -49,10 +49,6 @@ class ModelArguments:
         default="microsoft/VibeVoice-ASR",
         metadata={"help": "Path to pretrained model (HuggingFace model ID or local path)"}
     )
-    load_in_8bit: bool = field(
-        default=True,
-        metadata={"help": "Load model in 8-bit quantization to save memory"}
-    )
 
 
 @dataclass
@@ -387,7 +383,6 @@ def setup_model_for_training(
     device: str = "cuda",
     dtype: torch.dtype = torch.bfloat16,
     gradient_checkpointing: bool = True,
-    load_in_8bit: bool = True,
 ) -> Tuple[nn.Module, VibeVoiceASRProcessor]:
     """
     Load and prepare model for LoRA training.
@@ -415,21 +410,12 @@ def setup_model_for_training(
         "trust_remote_code": True,
     }
     
-    if load_in_8bit:
-        logger.info("Loading model in 8-bit quantization")
-        model_kwargs["load_in_8bit"] = True
-        model_kwargs["device_map"] = "auto"
-    else:
-        model_kwargs["dtype"] = dtype
-        model_kwargs["device_map"] = device if device == "auto" else None
-    
     model = VibeVoiceASRForConditionalGeneration.from_pretrained(
         model_path,
-        **model_kwargs,
+        dtype=dtype,
+        device_map="auto",
+        trust_remote_code=True,
     )
-    
-    if not load_in_8bit and device != "auto":
-        model = model.to(device)
     
     # Freeze speech tokenizers (we only want to fine-tune the language model)
     for name, param in model.named_parameters():
