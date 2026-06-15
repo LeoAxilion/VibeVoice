@@ -548,6 +548,7 @@ def main():
         data_args=data_args,
         lora_args=lora_args,
         training_args=training_args,
+        gradient_checkpointing=True,  # 默认启用梯度检查点
     )
 
 
